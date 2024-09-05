@@ -11,40 +11,40 @@ import os
 
 # Create a list of 20 major stock tickers (you can adjust this list)
 top_stocks = [
-    # 'AAPL',  # Apple Inc.
-    # 'MSFT',  # Microsoft Corporation
-    # 'GOOGL', # Alphabet Inc. (Google)
-    # 'AMZN',  # Amazon.com Inc.
-    # 'TSLA',  # Tesla Inc.
+    'AAPL',  # Apple Inc.
+    'MSFT',  # Microsoft Corporation
+    'GOOGL', # Alphabet Inc. (Google)
+    'AMZN',  # Amazon.com Inc.
+    'TSLA',  # Tesla Inc.
     
-    # 'META',    # Meta Platforms Inc. (Facebook)
-    # 'NVDA',  # NVIDIA Corporation
-    'ABBV', # Berkshire Hathaway Inc.
-    # 'V',     # Visa Inc.
-    # 'JNJ',   # Johnson & Johnson
+    'META',    # Meta Platforms Inc. (Facebook)
+    'NVDA',  # NVIDIA Corporation
+    'ABBV', # ABBVIE
+    'V',     # Visa Inc.
+    'JNJ',   # Johnson & Johnson
     
-    # 'WMT',   # Walmart Inc.
-    # 'PG',    # Procter & Gamble Co.
-    # 'JPM',   # JPMorgan Chase & Co.
-    # 'MA',    # Mastercard Incorporated
-    # 'DIS',   # The Walt Disney Company
+    'WMT',   # Walmart Inc.
+    'PG',    # Procter & Gamble Co.
+    'JPM',   # JPMorgan Chase & Co.
+    'MA',    # Mastercard Incorporated
+    'DIS',   # The Walt Disney Company
     
-    # 'PYPL',  # PayPal Holdings Inc.
-    # 'NFLX',  # Netflix Inc.
-    # 'KO',    # The Coca-Cola Company
-    # 'XOM',   # Exxon Mobil Corporation
-    # 'CSCO'   # Cisco Systems Inc.
+    'PYPL',  # PayPal Holdings Inc.
+    'NFLX',  # Netflix Inc.
+    'KO',    # The Coca-Cola Company
+    'XOM',   # Exxon Mobil Corporation
+    'CSCO'   # Cisco Systems Inc.
 ]
 
 # Create a folder to store the CSV files
 
 # Define the date range (2 years, 2024 is holdout trading set)
-# folder_name = '22-23 data'
-# start_date = '2022-01-01'
-# end_date = '2023-12-31'
+# folder_name = '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/raw_stock_data/22-23 data'
+# start_date = '2021-12-01'
+# end_date = '2023-11-30'
 
-folder_name = '24_trading_time'
-start_date = '2024-01-01'
+folder_name = '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/raw_stock_data/24_trading_time'
+start_date = '2023-12-01'
 end_date = '2024-9-01'
 
 os.makedirs(folder_name, exist_ok=True)

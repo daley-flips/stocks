@@ -25,7 +25,7 @@ buy = 5  # Price Per Stock
 # *****************************************************************************
 # iterate through files in 24_trading_time
 # *****************************************************************************
-directory_path = '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/pulling data/24_trading_time'
+directory_path = '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/raw_stock_data/24_trading_time'
 for file in os.listdir(directory_path):
     
     if file.startswith('.'):
