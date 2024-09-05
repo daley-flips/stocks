@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Sep  5 08:17:37 2024
-
-@author: daleyfraser
-"""
-
 # *****************************************************************************
 # idea: 
 # you have $100 on January 1st, 2024 you put $5 into the 20 most popular stocks
