@@ -1,0 +1,11 @@
+22-23 data is actually from
+
+December 1st 2021 to November 30th 2023
+
+And 23-24 is actually from
+
+December 1st 2023 to September 1st 2024
+
+However, the raw data is not the ML inputs, one of the features will be related to the stock price 1 month previously
+
+We need a 1 month gap moving into when we test the trading data to ensure no data leakage}
