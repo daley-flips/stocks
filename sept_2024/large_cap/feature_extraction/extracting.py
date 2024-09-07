@@ -47,7 +47,12 @@ def process_multiple_datasets(datasets):
 # ******************************************************************************
 def process_dataset(input_path, output_path):
     
+    
+    
     df = pd.read_csv(input_path)
+
+    # df = df[:200]
+    
     df['avg_price'] = df[['Open', 'High', 'Low', 'Close']].mean(axis=1)
 
     # Initialize an empty DataFrame for results
@@ -57,9 +62,8 @@ def process_dataset(input_path, output_path):
         'Median', 'Mean Absolute Deviation (MAD)', 'Coefficient of Variation (CV)',
         '10th Percentile', '90th Percentile', 'Autocorrelation', 'Cumulative Return',
         'start_price', 'start_date', 'end_price', 'end_date', 'percent_change',
-        'prev_day_to_avg_three_month', 'prev_day_to_avg_one_month', 'prev_day_to_avg_one_two_week',
-        'prev_day_to_avg_one_one_week', 'momentum', 'rsi', 'macd_current',
-        'macd_signal_current', 'upper_band_current', 'middle_band_current', 'lower_band_current',
+        'prev_day_to_avg_one_month', 'prev_day_to_avg_one_two_week',
+        'prev_day_to_avg_one_one_week', 'momentum', 'rsi', 'upper_band_current', 'middle_band_current', 'lower_band_current',
         'rolling_mean_7', 'rolling_std_7', 'rolling_mean_14', 'rolling_std_14',
         'ema_7', 'ema_14', 'roc_7', 'roc_14',
         'Volume', 'Volatility', 'Relative Volume (RVOL)', 'On-Balance Volume (OBV)',
@@ -70,13 +74,12 @@ def process_dataset(input_path, output_path):
         'VWAP'
     ])
 
-    curr = 100 # process 3 months data
-    n_days = len(df)
-
-    while curr +1<= n_days: # out of bounds unless we do curr + 13 <= n_days
+    for idx, row in df.iterrows():
         
-        period_df = df.iloc[curr-90: curr]
-        
+        if idx < 20:
+            continue  # need data from past month, 20 days is 4, 5 day weeks
+            
+        period_df = df.iloc[idx-20: idx]
         values = period_df['avg_price'].tolist()
         values = np.array(values)
         minimum = np.min(values)
@@ -102,12 +105,8 @@ def process_dataset(input_path, output_path):
 # ******************************************************************************
 # inputs relative to previous prices
 # ******************************************************************************
-
-        prev_day_to_avg_three_month = df['avg_price'].iloc[curr-1] / mean
-        
-        prev_month = values[-30:]  # Last 30 days within the 3-month period
-        prev_month_mean = np.mean(prev_month)
-        prev_day_to_avg_one_month = df['avg_price'].iloc[curr-1] / prev_month_mean
+        prev_month_mean = np.mean(period_df['avg_price'])
+        prev_day_to_avg_one_month = df['avg_price'].iloc[idx-1] / prev_month_mean
         
         if(prev_month_mean) == 0:
             print("Avg was 0")
@@ -115,11 +114,11 @@ def process_dataset(input_path, output_path):
     
         prev_two_week = values[-14:]  # Last 14 days within the 3-month period
         prev_two_week_mean = np.mean(prev_two_week)
-        prev_day_to_avg_one_two_week = df['avg_price'].iloc[curr-1] / prev_two_week_mean
+        prev_day_to_avg_one_two_week = df['avg_price'].iloc[idx-1] / prev_two_week_mean
         
         prev_one_week = values[-7:]  # Last 14 days within the 3-month period
         prev_one_week_mean = np.mean(prev_one_week)
-        prev_day_to_avg_one_one_week = df['avg_price'].iloc[curr-1] / prev_one_week_mean
+        prev_day_to_avg_one_one_week = df['avg_price'].iloc[idx-1] / prev_one_week_mean
 # ******************************************************************************
 
 
@@ -128,15 +127,10 @@ def process_dataset(input_path, output_path):
 # adding more inputs
 # ******************************************************************************
         # Price Momentum
-        momentum = df['avg_price'].pct_change(periods=5).iloc[curr-1]
+        momentum = df['avg_price'].pct_change(periods=5).iloc[idx-1]
         
         # Relative Strength Index (RSI)
         rsi = ta.rsi(pd.Series(values), length=14).iloc[-1]
-        
-        # Moving Average Convergence Divergence (MACD)
-        macd_df = ta.macd(pd.Series(values), fast=12, slow=26, signal=9)
-        macd_current = macd_df['MACD_12_26_9'].iloc[-1]
-        macd_signal_current = macd_df['MACDs_12_26_9'].iloc[-1]
         
         # Bollinger Bands
         bbands_df = ta.bbands(pd.Series(values), length=20)
@@ -145,10 +139,10 @@ def process_dataset(input_path, output_path):
         lower_band_current = bbands_df['BBL_20_2.0'].iloc[-1]
         
         # Rolling Mean and Standard Deviation for 7 and 14 days
-        rolling_mean_7 = df['avg_price'].rolling(window=7).mean().iloc[curr-1]
-        rolling_std_7 = df['avg_price'].rolling(window=7).std().iloc[curr-1]
-        rolling_mean_14 = df['avg_price'].rolling(window=14).mean().iloc[curr-1]
-        rolling_std_14 = df['avg_price'].rolling(window=14).std().iloc[curr-1]
+        rolling_mean_7 = df['avg_price'].rolling(window=7).mean().iloc[idx-1]
+        rolling_std_7 = df['avg_price'].rolling(window=7).std().iloc[idx-1]
+        rolling_mean_14 = df['avg_price'].rolling(window=14).mean().iloc[idx-1]
+        rolling_std_14 = df['avg_price'].rolling(window=14).std().iloc[idx-1]
         
         # Exponential Moving Average (EMA) for 7 and 14 days
         ema_7 = ta.ema(pd.Series(values), length=7).iloc[-1]
@@ -159,39 +153,39 @@ def process_dataset(input_path, output_path):
         roc_14 = ta.roc(pd.Series(values), length=14).iloc[-1]
         
         # Volume (assuming 'Volume' is a column in your dataset)
-        volume = df['Volume'].iloc[curr-1]
+        volume = df['Volume'].iloc[idx-1]
         
         # Volatility (standard deviation of price changes)
         volatility = np.std(np.diff(values))
         
         # Relative Volume (RVOL) - ratio of current volume to average volume
-        avg_volume_50 = df['Volume'].rolling(window=50).mean().iloc[curr-1]
+        avg_volume_50 = df['Volume'].rolling(window=50).mean().iloc[idx-1]
         rvol = volume / avg_volume_50
         
         # On-Balance Volume (OBV)
-        obv = ta.obv(df['avg_price'], df['Volume']).iloc[curr-1]
-        cmf = ta.cmf(df['High'], df['Low'], df['Close'], df['Volume'], length=20).iloc[curr-1]
-        vwap = calculate_vwap(df['High'], df['Low'], df['Close'], df['Volume']).iloc[curr-1]
+        obv = ta.obv(df['avg_price'], df['Volume']).iloc[idx-1]
+        cmf = ta.cmf(df['High'], df['Low'], df['Close'], df['Volume'], length=20).iloc[idx-1]
+        vwap = calculate_vwap(df['High'], df['Low'], df['Close'], df['Volume']).iloc[idx-1]
 
        # Average True Range (ATR)
-        atr = ta.atr(df['High'], df['Low'], df['Close'], length=14).iloc[curr-1]
+        atr = ta.atr(df['High'], df['Low'], df['Close'], length=14).iloc[idx-1]
 
         # Williams %R
-        williams_r_value = williams_r(df['High'], df['Low'], df['Close'], length=14).iloc[curr-1]
+        williams_r_value = williams_r(df['High'], df['Low'], df['Close'], length=14).iloc[idx-1]
 
         # Stochastic Oscillator
         stoch_df = ta.stoch(df['High'], df['Low'], df['Close'], fast_k=14, slow_k=3, slow_d=3)
         stoch_k_current = stoch_df['STOCHk_14_3_3'].iloc[-1]
         stoch_d_current = stoch_df['STOCHd_14_3_3'].iloc[-1]
         # Commodity Channel Index (CCI)
-        cci = ta.cci(df['High'], df['Low'], df['Close'], length=20).iloc[curr-1]
+        cci = ta.cci(df['High'], df['Low'], df['Close'], length=20).iloc[idx-1]
 
         # Average Directional Index (ADX)
-        adx = ta.adx(df['High'], df['Low'], df['Close'], length=14).iloc[curr-1]
+        adx = ta.adx(df['High'], df['Low'], df['Close'], length=14).iloc[idx-1]
 
         # Fibonacci Retracement Levels
-        high = df['High'].rolling(window=14).max().iloc[curr-1]
-        low = df['Low'].rolling(window=14).min().iloc[curr-1]
+        high = df['High'].rolling(window=14).max().iloc[idx-1]
+        low = df['Low'].rolling(window=14).min().iloc[idx-1]
         fib_levels = {
             'Fib_23.6': high - 0.236 * (high - low),
             'Fib_38.2': high - 0.382 * (high - low),
@@ -201,21 +195,20 @@ def process_dataset(input_path, output_path):
         }
 
         # Parabolic SAR
-        parabolic_sar = ta.psar(df['High'], df['Low'], df['Close']).iloc[curr-1]
+        parabolic_sar = ta.psar(df['High'], df['Low'], df['Close']).iloc[idx-1]
 
        
         # Adjusted Close Momentum
-        adj_close_momentum = df['Adj Close'].pct_change(periods=5).iloc[curr-1]
+        adj_close_momentum = df['Adj Close'].pct_change(periods=5).iloc[idx-1]
         # Adjusted Close Return
-        adj_close_return = (df['Adj Close'].iloc[curr-1] - df['Adj Close'].iloc[curr-6]) / df['Adj Close'].iloc[curr-6]
+        adj_close_return = (df['Adj Close'].iloc[idx-1] - df['Adj Close'].iloc[idx-6]) / df['Adj Close'].iloc[idx-6]
         
         # Adjusted Close Moving Averages
-        adj_close_7d_ma = df['Adj Close'].rolling(window=7).mean().iloc[curr-1]
-        adj_close_14d_ma = df['Adj Close'].rolling(window=14).mean().iloc[curr-1]
-        adj_close_30d_ma = df['Adj Close'].rolling(window=30).mean().iloc[curr-1]
+        adj_close_7d_ma = df['Adj Close'].rolling(window=7).mean().iloc[idx-1]
+        adj_close_14d_ma = df['Adj Close'].rolling(window=14).mean().iloc[idx-1]
         
         # Adjusted Close Volatility
-        adj_close_volatility = df['Adj Close'].rolling(window=30).std().iloc[curr-1]
+        adj_close_volatility = df['Adj Close'].rolling(window=30).std().iloc[idx-1]
 # ******************************************************************************
 
 
@@ -224,9 +217,9 @@ def process_dataset(input_path, output_path):
 # add to df
 # ******************************************************************************
 
-        start_price, start_date= calculate_start_end(df, curr)
-        result_date = df['Date'].iloc[curr]
-        print('making new row', curr) if curr%100 == 0 else None
+        start_price, start_date= calculate_start_end(df, idx)
+        result_date = df['Date'].iloc[idx]
+        print('making new row', idx) if idx%100 == 0 else None
         new_row = {
             'date': result_date,
             'Minimum': minimum, 'Mean': mean, 'Maximum': maximum, '25th Percentile': percentile_25,
@@ -235,17 +228,15 @@ def process_dataset(input_path, output_path):
             'Mean Absolute Deviation (MAD)': mean_abs_dev, 'Coefficient of Variation (CV)': coeff_of_var,
             '10th Percentile': percentile_10, '90th Percentile': percentile_90, 'Autocorrelation': autocorr,
             'Cumulative Return': cumulative_return, 'start_price': start_price, 'start_date': start_date, 
-            'prev_day_to_avg_three_month': prev_day_to_avg_three_month,
             'prev_day_to_avg_one_month': prev_day_to_avg_one_month,
             'prev_day_to_avg_one_two_week': prev_day_to_avg_one_two_week,
             'prev_day_to_avg_one_one_week': prev_day_to_avg_one_one_week,
-            'momentum': momentum, 'rsi': rsi, 'macd_current': macd_current,
-            'macd_signal_current': macd_signal_current, 'upper_band_current': upper_band_current,
+            'momentum': momentum, 'rsi': rsi, 'upper_band_current': upper_band_current,
             'middle_band_current': middle_band_current, 'lower_band_current': lower_band_current,
             'rolling_mean_7': rolling_mean_7, 'rolling_std_7': rolling_std_7,
             'rolling_mean_14': rolling_mean_14, 'rolling_std_14': rolling_std_14,
             'ema_7': ema_7, 'ema_14': ema_14, 'roc_7': roc_7, 'roc_14': roc_14,
-            'Volume': volume, 'Volatility': np.std(np.diff(values)), 'Relative Volume (RVOL)': rvol,
+            'Volume': volume, 'Volatility': volatility, 'Relative Volume (RVOL)': rvol,
             'On-Balance Volume (OBV)': obv, 'Williams %R': williams_r_value,
             'Stochastic Oscillator %K': stoch_k_current, 'Stochastic Oscillator %D': stoch_d_current,
             'Commodity Channel Index (CCI)': cci, 'ADX': adx,
@@ -256,17 +247,21 @@ def process_dataset(input_path, output_path):
             'VWAP': vwap,
             'Adj Close Momentum': adj_close_momentum, 'Adj Close Return': adj_close_return,
             'Adj Close 7d MA': adj_close_7d_ma, 'Adj Close 14d MA': adj_close_14d_ma,
-            'Adj Close 30d MA': adj_close_30d_ma, 'Adj Close Volatility': adj_close_volatility
+            'Adj Close Volatility': adj_close_volatility
         }
 
         new_row_df = pd.DataFrame([new_row])
         res = pd.concat([res, new_row_df], ignore_index=True)
 
-        curr += 1
+        idx += 1
  
     # res.dropna(inplace=True)
     res.to_csv(output_path, index=False)
     print(f"Processed CSV saved to {output_path}")
+    print(res)
+    print('\n')
+    columns_with_nan = res.columns[res.isna().any()].tolist()
+    print(columns_with_nan)
 # ******************************************************************************
 
 
@@ -274,13 +269,38 @@ def process_dataset(input_path, output_path):
 # ******************************************************************************
 # insert data and call main function
 # ******************************************************************************
-if __name__ == "__main__":
-    datasets = [
-       # apple
-        {
-            'input_path': '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/raw_stock_data/22-23 data/AAPL_stock_data.csv',
-            'output_path': '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/feature_extraction/22-23/feature_extracted_AAPL_22-23.csv'
-        }
-    ]
 
-    process_multiple_datasets(datasets)
+hehe = None
+
+datasets = [
+   # apple
+    {
+        'input_path': '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/raw_stock_data/22-23 data/AAPL_stock_data.csv',
+        'output_path': '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/feature_extraction/22-23/feature_extracted_AAPL_22-23.csv'
+    }
+]
+
+process_multiple_datasets(datasets)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
