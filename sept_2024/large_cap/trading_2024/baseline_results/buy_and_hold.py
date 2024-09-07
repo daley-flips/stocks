@@ -33,6 +33,10 @@ for file in os.listdir(directory_path):
     file_path = os.path.join(directory_path, file)  
     df = pd.read_csv(file_path)
     
+    # match ML test data
+    df = df[20:]
+    df = df[:-10]
+    
     if len(df) < 100 or df.isna().any().any():
         print(f"{file} idata is invalid")
         sys.exit()

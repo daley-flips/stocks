@@ -42,6 +42,12 @@ for file in os.listdir(directory_path):
     if len(df) < 100 or df.isna().any().any():
         print(f"{file} idata is invalid")
         sys.exit()
+    
+    # match ML test data
+    df = df[20:]
+    df = df[:-10]
+    # print(df)
+    # sys.exit()
 # *****************************************************************************
 
 
@@ -72,7 +78,10 @@ for file in os.listdir(directory_path):
 
     for idx, row in df.iterrows():
         
-        if not hold and idx != len(df)-1:
+        # print(idx)
+        
+        
+        if not hold and idx-19!= len(df):
             if random.randint(1,5) == 5:  # 20% chance of buying
                 start = row['avg_price']
                 hold = True
@@ -85,15 +94,15 @@ for file in os.listdir(directory_path):
             
             if (roi >= sell_at or  # moneyyyyyy
                 roi <= stop_loss or  # LLLLLLLL
-                idx == len(df)-1 or  # always sell on last day
+                idx-19 == len(df) or  # always sell on last day
                 days_held == 14):  # 2 week hold max
                 
                 single_port *= roi  # sell
                 hold = False
                 days_held = 0
     if hold:
-        single_port *= end  # Selling at the final price if still holding
-        hold = False  # Just a safeguard, should always happen
+        # print(idx-19)
+        # print(len(df))
         print('^how did that occur')
     
                 
