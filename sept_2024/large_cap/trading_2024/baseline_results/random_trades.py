@@ -31,7 +31,7 @@ buy = 5  # Price Per Stock
 # *****************************************************************************
 # iterate through files in 24_trading_time
 # *****************************************************************************
-directory_path = '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/raw_stock_data/24_trading_time'
+directory_path = '/Users/daleyfraser/Documents/cs/stocks/sept_2024/large_cap/feature_extraction/24'
 for file in os.listdir(directory_path):
     
     if file.startswith('.'):
@@ -55,7 +55,8 @@ for file in os.listdir(directory_path):
 # *****************************************************************************
 # create an average price for that day
 # *****************************************************************************
-    df['avg_price'] = df[['Open', 'High', 'Low', 'Close']].mean(axis=1)
+    df['avg_price'] = df[['todays_price']]
+    
 # *****************************************************************************
 
 

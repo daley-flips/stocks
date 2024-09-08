@@ -24,36 +24,12 @@ for file_name in os.listdir(folder):
         # Read the CSV into a DataFrame and append it to the list
         df = pd.read_csv(file_path)
         dfs.append(df)
-
-
-
-val_dfs = random.sample(dfs, 1)
-train_dfs = [df for df in dfs if id(df) not in [id(val_df) for val_df in val_dfs]]
-
-val = pd.concat(val_dfs, ignore_index=True)
-train = pd.concat(train_dfs, ignore_index=True)
-
 # *****************************************************************************
 
 
 
 # *****************************************************************************
-
-# ensure no nan values
-# *****************************************************************************
-samples = pd.concat([train, val])
-has_nan = samples.isnull().any().any()
-if has_nan:
-    print("The DataFrame contains NaN values.")
-    sys.exit()
-else:
-    print("")
-# *****************************************************************************
-
-
-
-# *****************************************************************************
-# scale variables to train on
+# define inputs to train on
 # *****************************************************************************
 inputs = ['todays_price', 'Minimum', 'Maximum', '25th Percentile',
        '75th Percentile', 'Skewness', 'Standard Deviation', 'Kurtosis',
@@ -72,17 +48,42 @@ inputs = ['todays_price', 'Minimum', 'Maximum', '25th Percentile',
        'Parabolic SAR 2', 'Parabolic SAR 3', 'VWAP', 'Adj Close Momentum',
        'Adj Close Return', 'Adj Close 7d MA', 'Adj Close 14d MA',
        'Adj Close Volatility']
+# *****************************************************************************
+
+
+
+# *****************************************************************************
+# LOO
+# *****************************************************************************
+accs = []
+aurocs = []
+sens = []
+specs = []
+
+tps = 0
+tns = 0
+fps = 0
+fns = 0
+
+for i in range(len(dfs)):
+    val = dfs[i]  # leave one out
+    train = pd.concat([dfs[j] for j in range(len(dfs)) if j != i], ignore_index=True)
+# *****************************************************************************
+
+
+
+# *****************************************************************************
+# deine input/outputs and scale inputs
+# *****************************************************************************
+    x_train = train[inputs]
+    y_train = train['buy?']
+    x_val = val[inputs]
+    y_val = val['buy?']
     
-
-x_train = train[inputs]
-y_train = train['buy?']
-x_val = val[inputs]
-y_val = val['buy?']
-
-# Scale features to be between 0 and 1
-scaler = MinMaxScaler()
-x_train_scaled = pd.DataFrame(scaler.fit_transform(x_train), columns=inputs)
-x_val_scaled = pd.DataFrame(scaler.transform(x_val), columns=inputs)
+    # Scale features to be between 0 and 1
+    scaler = MinMaxScaler()
+    x_train_scaled = pd.DataFrame(scaler.fit_transform(x_train), columns=inputs)
+    x_val_scaled = pd.DataFrame(scaler.transform(x_val), columns=inputs)
 # *****************************************************************************
 
 
@@ -90,11 +91,9 @@ x_val_scaled = pd.DataFrame(scaler.transform(x_val), columns=inputs)
 # *****************************************************************************
 # train model
 # *****************************************************************************
-performances = []
-
-model = LogisticRegression()
-model.fit(x_train_scaled, y_train)
-y_proba = model.predict_proba(x_val_scaled)[:, 1]  
+    model = LogisticRegression(max_iter=1000)
+    model.fit(x_train_scaled, y_train)
+    y_proba = model.predict_proba(x_val_scaled)[:, 1]  
 # *****************************************************************************
 
 
@@ -102,26 +101,26 @@ y_proba = model.predict_proba(x_val_scaled)[:, 1]
 # *****************************************************************************
 # find optimal threshold
 # *****************************************************************************
-fpr, tpr, thresholds = roc_curve(y_val, y_proba, drop_intermediate=False)
-yj = sorted(zip(tpr-fpr, thresholds))[-1][1]
-# print(f'Optimal Threshold by Youden\'s J: {yj}\n')
+    fpr, tpr, thresholds = roc_curve(y_val, y_proba, drop_intermediate=False)
+    yj = sorted(zip(tpr-fpr, thresholds))[-1][1]
+    # print(f'Optimal Threshold by Youden\'s J: {yj}\n')
+    
+    # Make predictions based on the optimal threshold
+    y_pred = (y_proba >= yj).astype(int)
+    
+    tn, fp, fn, tp = confusion_matrix(y_val, y_pred).ravel()
+    
+    tps += tp
+    tns += tn
+    fps += fp
+    fns += fn
+    
+    # Calculate metrics
+    accs.append(accuracy_score(y_val, y_pred))
+    sens.append(tp / (tp + fn))  # Sensitivity, recall, or true positive rate
+    specs.append(tn / (tn + fp)) # Specificity or true negative rate
+    aurocs.append(roc_auc_score(y_val, y_proba))
 
-# Make predictions based on the optimal threshold
-y_pred = (y_proba >= yj).astype(int)
-
-tn, fp, fn, tp = confusion_matrix(y_val, y_pred).ravel()
-
-# Calculate metrics
-accuracy = accuracy_score(y_val, y_pred)
-sensitivity =tp / (tp + fn)  # Sensitivity, recall, or true positive rate
-specificity = tn / (tn + fp) # Specificity or true negative rate
-auroc = roc_auc_score(y_val, y_proba)
-
-# print(f'Confusion Matrix: TP={tp}, TN={tn}, FP={fp}, FN={fn}')
-# print(f'Accuracy: {accuracy}')
-# print(f'Sensitivity: {sensitivity}')
-# print(f'Specificity: {specificity}')
-# print(f'AUROC: {auroc}')
 # *****************************************************************************
 
 
@@ -129,10 +128,17 @@ auroc = roc_auc_score(y_val, y_proba)
 # *****************************************************************************
 # results
 # *****************************************************************************
-performances.append(('Validation', round(accuracy, 4), round(auroc, 4), round(sensitivity, 4), round(specificity, 4)))
-print('\nResults for Logistic Regression')
+accuracy = sum(accs)/len(accs)
+auroc = sum(aurocs)/len(aurocs)
+sensitivity = sum(sens)/len(sens)
+specificity = sum(specs)/len(specs)
+
+performances = []
+performances.append((round(accuracy, 4), round(auroc, 4), round(sensitivity, 4), round(specificity, 4)))
+
+all_samples = pd.concat(dfs, ignore_index=True)
 print('Distribution:')
-value_counts = val['buy?'].value_counts()
+value_counts = all_samples['buy?'].value_counts()
 higher = 0
 total = 0
 for index, value in value_counts.items():
@@ -140,11 +146,10 @@ for index, value in value_counts.items():
     total += value
     print(f"{index}: {value}")
 print('standard to beat:', higher / total)
-print(tabulate(performances, headers=["Model", "Accuracy", "AUROC", "Sensitivity", "Specificity", "Params"], tablefmt="pretty"))
-# print(f'Model Coefficients:\n{model.coef_}')
-print(f'Confusion Matrix: TP={tp}, TN={tn}, FP={fp}, FN={fn}')
 
-
+print('\nAverage performance')
+print(tabulate(performances, headers=["Accuracy", "AUROC", "Sensitivity", "Specificity", "Params"], tablefmt="pretty"))
+print(f'\nConfusion Matrix: TP={tps}, TN={tns}, FP={fps}, FN={fns}')
 
 
 
